@@ -7,24 +7,24 @@ function App() {
 	const initialDirectories: DirectoryElement[] = [
 		{
 			id: '01',
-			name: '1',
-			childrenId: '1.1'
+			title: '1',
+			hasChildren: true
 		},
 		{
 			id: '02',
-			name: '2',
-			childrenId: '2.1'
+			title: '2',
+			hasChildren: true
 		},
 	]
 
   return (
-		<ul>
+		<div>
 			{initialDirectories.map(item => {
 				return (
 					<DirectoryItem key={item.id} directory={item} />
 				)
 			})}
-		</ul>
+		</div>
   )
 }
 

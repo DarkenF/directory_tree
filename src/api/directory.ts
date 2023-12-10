@@ -6,18 +6,18 @@ const getId = () => {
 	return String(id)
 }
 
-export const getDirectoryItemsByHashApi = async (hash: string): Promise<DirectoryElement[]> => {
+export const fetchDirectoryItemsByParentIdApi = async (parentId: string): Promise<DirectoryElement[]> => {
 	return new Promise<DirectoryElement[]>((resolve) => {
 		setTimeout(() => {
 			resolve(		[{
 					id: getId(),
-					name: hash + getId(),
-					childrenId: getId()
+				title: parentId + getId(),
+				hasChildren: Math.random() < 0.8,
 				},
 				{
 					id: getId(),
-					name: hash + getId(),
-					childrenId: getId()
+					title: parentId + getId(),
+					hasChildren: Math.random() < 0.8,
 				},]);
 		}, 2000);
 	});

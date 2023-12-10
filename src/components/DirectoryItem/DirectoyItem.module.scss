@@ -1,0 +1,11 @@
+.arrowOpen {
+  width: 24px;
+  display: inline-block;
+  transform: rotateZ(-90deg);
+}
+
+.directoryItem {
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+}

@@ -3,8 +3,8 @@ import {immer} from 'zustand/middleware/immer';
 
 export interface DirectoryElement {
 	id: string;
-	name: string;
-	childrenId?: string;
+	title: string;
+	hasChildren: boolean;
 }
 
 
