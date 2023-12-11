@@ -6,7 +6,11 @@ import {clsx} from "clsx";
 
 import styles from './DirectoyItem.module.scss'
 
-export const DirectoryItem = ({directory}: {directory:DirectoryElement}) => {
+export const DirectoryItem = (props: {data: DirectoryElement, index: number}) => {
+	const {data, index} = props;
+
+	const directory = data[index]
+
 	const [open, setOpen] = useState<boolean>(false)
 	const [isLoading, setIsLoading] = useState<boolean>(false)
 
