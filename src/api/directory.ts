@@ -6,19 +6,30 @@ const getId = () => {
 	return String(id)
 }
 
-export const fetchDirectoryItemsByParentIdApi = async (parentId: string): Promise<DirectoryElement[]> => {
+function randomIntFromInterval(min: number, max: number) {
+	return Math.floor(Math.random() * (max - min + 1) + min)
+}
+
+const generateItems = (parentId: string) => {
+	const data = [];
+	const count = 4
+
+	for (let i = 0; i < count; i++) {
+		const id = `${parentId ? parentId + '_' : ''}${i}`
+		data.push({
+			id,
+			title: id,
+			hasChildren: Math.random() < 0.8,
+		})
+	}
+
+	return data
+}
+
+export const fetchDirectoryItemsApi = async (parentId = ''): Promise<DirectoryElement[]> => {
 	return new Promise<DirectoryElement[]>((resolve) => {
 		setTimeout(() => {
-			resolve(		[{
-					id: getId(),
-				title: parentId + getId(),
-				hasChildren: Math.random() < 0.8,
-				},
-				{
-					id: getId(),
-					title: parentId + getId(),
-					hasChildren: Math.random() < 0.8,
-				},]);
+			resolve(generateItems(parentId));
 		}, 2000);
 	});
 };
