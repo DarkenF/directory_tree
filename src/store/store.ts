@@ -1,64 +1,84 @@
-import {create} from 'zustand';
-import {immer} from 'zustand/middleware/immer';
+import { create } from 'zustand';
+import { immer } from 'zustand/middleware/immer';
 
 export interface DirectoryElement {
-	id: string;
-	title: string;
-	hasChildren: boolean;
-	childrenIds?: string[];
-	open?: boolean;
+  id: string;
+  title: string;
+  hasChildren: boolean;
+  childrenIds?: string[];
+  open?: boolean;
+  errorMessage?: string;
 }
 
-export type DirectoryItemsMap = Record<string, DirectoryElement>
+export type DirectoryItemsMap = Record<string, DirectoryElement>;
 
 export interface Directory {
-	rootIds: string[];
-	itemsMap: DirectoryItemsMap
+  rootIds: string[];
+  itemsMap: DirectoryItemsMap;
 }
 
 export interface DirectoryStore {
   directory: Directory;
-	setDirectoryData: (ids: string[], itemsMap: DirectoryItemsMap) => void;
-	setChildrenIds: (itemId: string, ids: string[]) => void;
-	setDirectoryOpen: (itemId: string, open: boolean) => void;
+  setDirectoryItems: (items: DirectoryElement[], itemId?: string) => void;
+  setDirectoryOpen: (itemId: string, open: boolean) => void;
+  setDirectoryItemError: (itemId: string, error: string) => void;
 }
 
 export const useDirectoryStore = create<DirectoryStore>()(
   immer((set, get) => ({
     directory: {
-			rootIds: [],
-	    itemsMap: {},
+      rootIds: [],
+      itemsMap: {},
     },
-    setDirectoryData: (ids: string[], itemsMap: DirectoryItemsMap) => {
-	    const directoryItemsMap = get().directory.itemsMap
-	    const rootIds = get().directory.rootIds
+    setDirectoryItems: (items: DirectoryElement[], itemId?: string) => {
+      const directoryItemsMap = get().directory.itemsMap;
+      const rootIds = get().directory.rootIds;
 
-	    set((state) => {
-		    state.directory.itemsMap = {
-					...directoryItemsMap, ...itemsMap
-		    }
-		    state.directory.rootIds = [...rootIds, ...ids]
-	    });
+      const itemsMap = items.reduce((acc, item) => {
+        acc[item.id] = item;
+
+        return acc;
+      }, {} as DirectoryItemsMap);
+
+      set((state) => {
+        state.directory.itemsMap = {
+          ...directoryItemsMap,
+          ...itemsMap,
+        };
+
+        const ids = Object.keys(itemsMap);
+
+        if (!rootIds.length) {
+          state.directory.rootIds.push(...ids);
+        }
+
+        if (itemId) {
+          state.directory.itemsMap[itemId] = {
+            ...directoryItemsMap[itemId],
+            childrenIds: ids,
+          };
+        }
+      });
     },
-	  setChildrenIds: (itemId: string, ids: string[]) => {
-		  const directoryItemsMap = get().directory.itemsMap
+    setDirectoryItemError: (itemId: string, errorMessage: string) => {
+      const directoryItemsMap = get().directory.itemsMap;
 
-		  set((state) => {
-			  state.directory.itemsMap[itemId] = {
-					...directoryItemsMap[itemId],
-				  childrenIds: ids
-			  }
-		  });
-	  },
-	  setDirectoryOpen: (itemId: string, open: boolean) => {
-		  const directoryItemsMap = get().directory.itemsMap
+      set((state) => {
+        state.directory.itemsMap[itemId] = {
+          ...directoryItemsMap[itemId],
+          errorMessage: errorMessage,
+        };
+      });
+    },
+    setDirectoryOpen: (itemId: string, open: boolean) => {
+      const directoryItemsMap = get().directory.itemsMap;
 
-		  set((state) => {
-			  state.directory.itemsMap[itemId] = {
-					...directoryItemsMap[itemId],
-				  open,
-			  }
-		  });
-	  }
+      set((state) => {
+        state.directory.itemsMap[itemId] = {
+          ...directoryItemsMap[itemId],
+          open,
+        };
+      });
+    },
   })),
 );

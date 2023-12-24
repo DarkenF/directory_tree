@@ -1,81 +1,98 @@
-import './App.css'
-import {DirectoryItem} from "./components/DirectoryItem/DirectoryItem";
-import {DirectoryElement, DirectoryItemsMap, DirectoryStore, useDirectoryStore} from "./store/store";
-import {FixedSizeList} from "react-window";
-import {useEffect, useMemo} from "react";
-import {useShallow} from "zustand/react/shallow";
-import {fetchDirectoryItemsApi} from "./api/directory";
+import './App.css';
+import { DirectoryItem } from './components/DirectoryItem/DirectoryItem';
+import {
+  DirectoryElement,
+  DirectoryItemsMap,
+  DirectoryStore,
+  useDirectoryStore,
+} from './store/store';
+import { FixedSizeList } from 'react-window';
+import { useEffect, useMemo, useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
+import { fetchDirectoryItemsApi } from './api/directory';
 
-const getChildItems = (itemsMap: DirectoryItemsMap, ids: string[], level= 0): DirectoryElement[] => {
-	const data = [];
+interface ChildItems extends DirectoryElement {
+  level?: number;
+}
 
-	ids.forEach((id) => {
-		const item = itemsMap[id]
+const getChildItems = (
+  itemsMap: DirectoryItemsMap,
+  ids: string[],
+  data: ChildItems[] = [],
+  level = 0,
+): DirectoryElement[] => {
+  ids.forEach((id) => {
+    const item = itemsMap[id];
 
-		data.push({
-			...item,
-			level
-		})
+    data.push({
+      ...item,
+      level,
+    });
 
-		if (item.open && item.childrenIds) {
-			const childItems = getChildItems(itemsMap, item.childrenIds, level + 1)
+    if (item.open && item.childrenIds) {
+      getChildItems(itemsMap, item.childrenIds, data, level + 1);
+    }
+  });
 
-			data.push(...childItems)
-		}
-	})
+  return data;
+};
 
-	return data
+function itemKey(index, data) {
+  const item = data[index];
+
+  return item.id;
 }
 
 function App() {
-	const [rootIds, itemsMap, setDirectoryData] = useDirectoryStore(useShallow((state: DirectoryStore) => [state.directory.rootIds, state.directory.itemsMap, state.setDirectoryData] as const));
+  const [error, setError] = useState<string>('');
+  const [rootIds, itemsMap, setDirectoryData] = useDirectoryStore(
+    useShallow(
+      (state: DirectoryStore) =>
+        [
+          state.directory.rootIds,
+          state.directory.itemsMap,
+          state.setDirectoryItems,
+        ] as const,
+    ),
+  );
 
-	function itemKey(index, data) {
-		const item = data[index]
+  useEffect(() => {
+    if (!rootIds.length) {
+      (async () => {
+        try {
+          const data = await fetchDirectoryItemsApi();
 
-		return item.id;
-	}
+          setDirectoryData(data);
+        } catch (e) {
+          console.error(e);
+          setError('Произошла ошибка, повторите позже');
+        }
+      })();
+    }
+  }, [rootIds]);
 
-	useEffect(() => {
-		if (!rootIds.length) {
-			(async () => {
-				const data = await fetchDirectoryItemsApi()
-				const result = data.reduce((acc, item) => {
-					acc.rootIds = [...acc.rootIds, item.id];
-					acc.itemsMap = {
-						...acc.itemsMap,
-						[item.id]: item
-					}
+  const itemData = useMemo(() => {
+    return getChildItems(itemsMap, rootIds);
+  }, [itemsMap, rootIds]);
 
-					return acc
-				}, {
-					rootIds: [],
-					itemsMap: {}
-				} as {rootIds: string[], itemsMap: DirectoryItemsMap})
+  if (error) {
+    return <h4>{error}</h4>;
+  }
 
-				setDirectoryData(result.rootIds, result.itemsMap)
-			})()
-		}
-	}, [rootIds])
-
-	const itemData = useMemo(() => {
-		return getChildItems(itemsMap, rootIds)
-	}, [itemsMap, rootIds])
-
-	return (
-		<div>
-			<FixedSizeList
-				itemData={itemData}
-				itemKey={itemKey}
-				height={500}
-				itemCount={itemData.length}
-				itemSize={28}
-				width="100%"
-			>
-				{DirectoryItem}
-			</FixedSizeList>
-		</div>
-	)
+  return (
+    <div>
+      <FixedSizeList
+        itemData={itemData}
+        itemKey={itemKey}
+        height={500}
+        itemCount={itemData.length}
+        itemSize={28}
+        width="100%"
+      >
+        {DirectoryItem}
+      </FixedSizeList>
+    </div>
+  );
 }
 
-export default App
+export default App;
