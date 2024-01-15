@@ -9,7 +9,7 @@ import {
 import { FixedSizeList } from 'react-window';
 import { useEffect, useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { fetchDirectoryItemsApi } from './api/directory';
+import { Toaster } from 'react-hot-toast';
 
 interface ChildItems extends DirectoryElement {
   level?: number;
@@ -44,30 +44,21 @@ function itemKey(index, data) {
 }
 
 function App() {
-  const [error, setError] = useState<string>('');
-  const [rootIds, itemsMap, setDirectoryData] = useDirectoryStore(
+  const [rootIds, itemsMap, errorMessage, fetchDirectoryItems] = useDirectoryStore(
     useShallow(
       (state: DirectoryStore) =>
         [
           state.directory.rootIds,
           state.directory.itemsMap,
-          state.setDirectoryItems,
+          state.directory.errorMessage,
+          state.fetchDirectoryItems,
         ] as const,
     ),
   );
 
   useEffect(() => {
     if (!rootIds.length) {
-      (async () => {
-        try {
-          const data = await fetchDirectoryItemsApi();
-
-          setDirectoryData(data);
-        } catch (e) {
-          console.error(e);
-          setError('Произошла ошибка, повторите позже');
-        }
-      })();
+	    fetchDirectoryItems()
     }
   }, [rootIds]);
 
@@ -75,22 +66,23 @@ function App() {
     return getChildItems(itemsMap, rootIds);
   }, [itemsMap, rootIds]);
 
-  if (error) {
-    return <h4>{error}</h4>;
+  if (errorMessage) {
+    return <h4>{errorMessage}</h4>;
   }
 
   return (
     <div>
-      <FixedSizeList
-        itemData={itemData}
-        itemKey={itemKey}
-        height={500}
-        itemCount={itemData.length}
-        itemSize={28}
-        width="100%"
-      >
-        {DirectoryItem}
-      </FixedSizeList>
+	    <Toaster />
+	    <FixedSizeList
+		    itemData={itemData}
+		    itemKey={itemKey}
+		    height={500}
+		    itemCount={itemData.length}
+		    itemSize={28}
+		    width="100%"
+	    >
+		    {DirectoryItem}
+	    </FixedSizeList>
     </div>
   );
 }

@@ -1,13 +1,10 @@
-import { useState } from 'react';
 import {
   DirectoryElement,
-  DirectoryItemsMap,
   useDirectoryStore,
 } from '../../store/store';
 import { clsx } from 'clsx';
 
 import styles from './DirectoyItem.module.scss';
-import { fetchDirectoryItemsApi } from '../../api/directory';
 import { useShallow } from 'zustand/react/shallow';
 
 interface AdditionalData {
@@ -22,39 +19,28 @@ export const DirectoryItem = (props: {
   const { data, index, style } = props;
 
   const directory = data[index];
-  const isOpen = directory.open;
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const {open: isOpen, isLoading} = directory;
 
-  const [setDirectoryItems, setDirectoryOpen, setDirectoryItemError] = useDirectoryStore(
+  const [fetchDirectoryItems, setDirectoryOpen] = useDirectoryStore(
     useShallow(
       (state) =>
         [
-          state.setDirectoryItems,
+          state.fetchDirectoryItems,
           state.setDirectoryOpen,
-          state.setDirectoryItemError,
         ] as const,
     ),
   );
 
   const toggleOpen = async () => {
-    if (isOpen) {
-      setDirectoryItemError(directory.id, '');
+		if (isOpen) {
+			setDirectoryOpen(directory.id ,false)
+
+			return;
+		}
+
+		if (directory.hasChildren && !directory.childrenIds) {
+	    fetchDirectoryItems(directory.id)
     }
-
-    if (directory.hasChildren && !isOpen && !directory.childrenIds) {
-      setIsLoading(true);
-      try {
-        const items = await fetchDirectoryItemsApi(directory.id);
-
-        setDirectoryItems(items, directory.id);
-      } catch (e) {
-        console.error(e);
-        setDirectoryItemError(directory.id, `Ошибка загрузки`);
-      }
-
-      setIsLoading(false);
-    }
-    setDirectoryOpen(directory.id, !isOpen);
   };
 
   const renderArrow = () => {
@@ -89,7 +75,6 @@ export const DirectoryItem = (props: {
           <span style={{ marginRight: '3px' }}>----</span>
         )}
         {directory.title}
-        {directory.errorMessage && <span>&nbsp;{directory.errorMessage}</span>}
         {isLoading && <span>&nbsp;Loading...</span>}
       </div>
     </div>
