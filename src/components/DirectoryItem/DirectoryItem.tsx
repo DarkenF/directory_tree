@@ -1,11 +1,11 @@
-import {
-  DirectoryElement,
-  useDirectoryStore,
-} from '../../store/store';
+import { DirectoryElement, useDirectoryStore } from '../../store/store';
 import { clsx } from 'clsx';
 
 import styles from './DirectoyItem.module.scss';
 import { useShallow } from 'zustand/react/shallow';
+import { CSSProperties } from 'react';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface AdditionalData {
   level: number;
@@ -13,33 +13,43 @@ interface AdditionalData {
 
 export const DirectoryItem = (props: {
   data: (DirectoryElement & AdditionalData)[];
-  style: string;
+  style: CSSProperties;
   index: number;
 }) => {
-  const { data, index, style } = props;
+  const { data, index, style: virtualizationStyles } = props;
 
   const directory = data[index];
-  const {open: isOpen, isLoading} = directory;
+  const { open: isOpen, isLoading } = directory;
+
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
+    id: directory.id,
+  });
+  const style: CSSProperties = {
+    ...virtualizationStyles,
+    transform: CSS.Translate.toString(transform),
+    transition,
+  };
 
   const [fetchDirectoryItems, setDirectoryOpen] = useDirectoryStore(
-    useShallow(
-      (state) =>
-        [
-          state.fetchDirectoryItems,
-          state.setDirectoryOpen,
-        ] as const,
-    ),
+    useShallow((state) => [state.fetchDirectoryItems, state.setDirectoryOpen] as const),
   );
 
-  const toggleOpen = async () => {
-		if (isOpen) {
-			setDirectoryOpen(directory.id ,false)
+  const toggleOpen = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isOpen) {
+      setDirectoryOpen(directory.id, false);
 
-			return;
-		}
+      return;
+    }
 
-		if (directory.hasChildren && !directory.childrenIds) {
-	    fetchDirectoryItems(directory.id)
+    if (directory.hasChildren) {
+      if (!directory.childrenIds) {
+        fetchDirectoryItems(directory.id);
+
+        return;
+      }
+
+      setDirectoryOpen(directory.id, true);
     }
   };
 
@@ -59,7 +69,7 @@ export const DirectoryItem = (props: {
   };
 
   return (
-    <div className={styles.directoryItem} style={style}>
+    <div ref={setNodeRef} className={styles.directoryItem} style={style}>
       {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events,jsx-a11y/no-noninteractive-element-interactions,jsx-a11y/no-static-element-interactions */}
       <div
         style={{
@@ -67,14 +77,16 @@ export const DirectoryItem = (props: {
           lineHeight: '28px',
           paddingLeft: `${directory.level * 20}px`,
         }}
-        onClick={() => toggleOpen()}
+        onClick={(e) => toggleOpen(e)}
       >
         {directory.hasChildren ? (
           renderArrow()
         ) : (
           <span style={{ marginRight: '3px' }}>----</span>
         )}
-        {directory.title}
+        <span {...attributes} {...listeners}>
+          {directory.title}
+        </span>
         {isLoading && <span>&nbsp;Loading...</span>}
       </div>
     </div>

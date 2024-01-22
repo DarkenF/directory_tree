@@ -7,12 +7,14 @@ import {
   useDirectoryStore,
 } from './store/store';
 import { FixedSizeList } from 'react-window';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { Toaster } from 'react-hot-toast';
+import { closestCenter, DndContext, DragEndEvent } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 
 interface ChildItems extends DirectoryElement {
-  level?: number;
+  level: number;
 }
 
 const getChildItems = (
@@ -20,7 +22,7 @@ const getChildItems = (
   ids: string[],
   data: ChildItems[] = [],
   level = 0,
-): DirectoryElement[] => {
+): ChildItems[] => {
   ids.forEach((id) => {
     const item = itemsMap[id];
 
@@ -37,28 +39,28 @@ const getChildItems = (
   return data;
 };
 
-function itemKey(index, data) {
+function itemKey(index: number, data: DirectoryElement[]) {
   const item = data[index];
 
   return item.id;
 }
 
 function App() {
-  const [rootIds, itemsMap, errorMessage, fetchDirectoryItems] = useDirectoryStore(
+  const [rootIds, itemsMap, fetchDirectoryItems, moveDirectoryItem] = useDirectoryStore(
     useShallow(
       (state: DirectoryStore) =>
         [
           state.directory.rootIds,
           state.directory.itemsMap,
-          state.directory.errorMessage,
           state.fetchDirectoryItems,
+          state.moveDirectoryItem,
         ] as const,
     ),
   );
 
   useEffect(() => {
     if (!rootIds.length) {
-	    fetchDirectoryItems()
+      fetchDirectoryItems();
     }
   }, [rootIds]);
 
@@ -66,23 +68,38 @@ function App() {
     return getChildItems(itemsMap, rootIds);
   }, [itemsMap, rootIds]);
 
-  if (errorMessage) {
-    return <h4>{errorMessage}</h4>;
-  }
+  const itemDataIds = useMemo(() => itemData.map(({ id }) => id), [itemData]);
+
+  console.log(itemsMap);
+
+  const onDragEnd = (e: DragEndEvent) => {
+    const overItemId = e.over?.id as string | undefined;
+    const activeItemId = e.active.id as string;
+
+    if (!overItemId) {
+      return;
+    }
+
+    moveDirectoryItem(activeItemId, overItemId);
+  };
 
   return (
     <div>
-	    <Toaster />
-	    <FixedSizeList
-		    itemData={itemData}
-		    itemKey={itemKey}
-		    height={500}
-		    itemCount={itemData.length}
-		    itemSize={28}
-		    width="100%"
-	    >
-		    {DirectoryItem}
-	    </FixedSizeList>
+      <Toaster />
+      <DndContext collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+        <SortableContext items={itemDataIds} strategy={verticalListSortingStrategy}>
+          <FixedSizeList
+            itemData={itemData}
+            itemKey={itemKey}
+            height={500}
+            itemCount={itemData.length}
+            itemSize={28}
+            width="100%"
+          >
+            {DirectoryItem}
+          </FixedSizeList>
+        </SortableContext>
+      </DndContext>
     </div>
   );
 }

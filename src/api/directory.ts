@@ -9,6 +9,7 @@ const generateItems = (parentId: string) => {
     data.push({
       id,
       title: id,
+      parentId,
       hasChildren: Math.random() < 0.8,
     });
   }
