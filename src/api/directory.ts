@@ -30,6 +30,6 @@ export const fetchDirectoryItemsApi = async (
         reject('error');
       }
       resolve(generateItems(parentId));
-    }, 2000);
+    }, 1000);
   });
 };

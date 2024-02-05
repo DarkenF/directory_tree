@@ -37,9 +37,9 @@ export const useDirectoryStore = create<DirectoryStore>()(
       itemsMap: {},
     },
     setDirectoryItems: (itemId: string | undefined, items: DirectoryElement[]) => {
-      const rootIds = get().directory.rootIds;
-
       set((state) => {
+        const rootIds = state.directory.rootIds;
+
         const itemsIds: string[] = [];
 
         items.forEach((item) => {
@@ -58,15 +58,14 @@ export const useDirectoryStore = create<DirectoryStore>()(
       });
     },
     moveDirectoryItem: (activeItemId: string, overItemId: string) => {
-      const itemsMap = get().directory.itemsMap;
-      const rootIds = get().directory.rootIds;
-      const activeItemParentId = itemsMap[activeItemId].parentId;
-      const overParentItemId = itemsMap[overItemId].parentId;
-
       set((state) => {
+        const rootIds = get().directory.rootIds;
+        const itemsMap = state.directory.itemsMap;
+        const activeItemParentId = itemsMap[activeItemId].parentId;
+        const overParentItemId = itemsMap[overItemId].parentId;
         // Убираем из childrenIds activeItemId в родителе activeItem
         if (activeItemParentId) {
-          const nextActiveParentChildrenIds = get().directory.itemsMap[
+          const nextActiveParentChildrenIds = state.directory.itemsMap[
             activeItemParentId
           ].childrenIds?.filter((itemId) => itemId !== activeItemId);
 
@@ -74,10 +73,14 @@ export const useDirectoryStore = create<DirectoryStore>()(
             nextActiveParentChildrenIds;
           state.directory.itemsMap[activeItemParentId].hasChildren =
             !!nextActiveParentChildrenIds?.length;
+        } else {
+          // Нет у activeItem поля parentId, удаляем из rootIds
+          state.directory.rootIds = rootIds.filter((item) => item !== activeItemId);
         }
 
         if (overParentItemId) {
           // Добавялем в childrenIds activeItemId в родителе overItem
+          // TODO: Почему get().directory.itemsMap[overParentItemId].childrenIds и state.directory.itemsMap[overParentItemId].childrenIds отличаются тут?
           const overParentChildrenIds =
             get().directory.itemsMap[overParentItemId].childrenIds;
 
@@ -95,6 +98,7 @@ export const useDirectoryStore = create<DirectoryStore>()(
             0,
             activeItemId,
           );
+          state.directory.itemsMap[activeItemId].parentId = overParentItemId;
         } else {
           // Для случая если item перемещается в rootIds
           const overRootIdsIndex = rootIds.indexOf(overItemId);
@@ -105,6 +109,7 @@ export const useDirectoryStore = create<DirectoryStore>()(
           }
 
           state.directory.rootIds.splice(overRootIdsIndex, 0, activeItemId);
+          state.directory.itemsMap[activeItemId].parentId = undefined;
         }
       });
     },

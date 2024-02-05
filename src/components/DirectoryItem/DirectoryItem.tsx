@@ -23,6 +23,9 @@ export const DirectoryItem = (props: {
 
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
     id: directory.id,
+    data: {
+      parentId: directory.parentId,
+    },
   });
   const style: CSSProperties = {
     ...virtualizationStyles,
@@ -73,8 +76,8 @@ export const DirectoryItem = (props: {
       {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events,jsx-a11y/no-noninteractive-element-interactions,jsx-a11y/no-static-element-interactions */}
       <div
         style={{
-          minHeight: '28px',
-          lineHeight: '28px',
+          minHeight: '50px',
+          lineHeight: '50px',
           paddingLeft: `${directory.level * 20}px`,
         }}
         onClick={(e) => toggleOpen(e)}

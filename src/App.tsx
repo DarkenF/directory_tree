@@ -45,6 +45,28 @@ function itemKey(index: number, data: DirectoryElement[]) {
   return item.id;
 }
 
+const isOverItemIsChildren = (
+  itemsMap: DirectoryItemsMap,
+  activeItemId: string,
+  overItemParentId: string | undefined,
+): boolean => {
+  if (!overItemParentId) {
+    return false;
+  }
+
+  const overItemParent = itemsMap[overItemParentId];
+
+  if (overItemParent.id === activeItemId) {
+    return true;
+  }
+
+  if (!overItemParent.parentId) {
+    return false;
+  }
+
+  return isOverItemIsChildren(itemsMap, activeItemId, overItemParent.parentId);
+};
+
 function App() {
   const [rootIds, itemsMap, fetchDirectoryItems, moveDirectoryItem] = useDirectoryStore(
     useShallow(
@@ -70,30 +92,42 @@ function App() {
 
   const itemDataIds = useMemo(() => itemData.map(({ id }) => id), [itemData]);
 
-  console.log(itemsMap);
-
   const onDragEnd = (e: DragEndEvent) => {
     const overItemId = e.over?.id as string | undefined;
     const activeItemId = e.active.id as string;
 
-    if (!overItemId) {
+    if (
+      !overItemId ||
+      isOverItemIsChildren(itemsMap, activeItemId, e.over?.data.current?.parentId)
+    ) {
       return;
     }
 
     moveDirectoryItem(activeItemId, overItemId);
   };
+  const onDragOver = (e: DragEndEvent) => {
+    console.log('over', e);
+  };
+  const onDragMove = (e: DragEndEvent) => {
+    console.log('move', e);
+  };
 
   return (
     <div>
       <Toaster />
-      <DndContext collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+      <DndContext
+        collisionDetection={closestCenter}
+        onDragEnd={onDragEnd}
+        onDragMove={onDragMove}
+        onDragOver={onDragOver}
+      >
         <SortableContext items={itemDataIds} strategy={verticalListSortingStrategy}>
           <FixedSizeList
             itemData={itemData}
             itemKey={itemKey}
             height={500}
             itemCount={itemData.length}
-            itemSize={28}
+            itemSize={50}
             width="100%"
           >
             {DirectoryItem}
