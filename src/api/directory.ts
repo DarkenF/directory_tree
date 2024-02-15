@@ -10,7 +10,7 @@ const generateItems = (parentId: string) => {
       id,
       title: id,
       parentId,
-      hasChildren: Math.random() < 0.8,
+      hasChildren: Math.random() < 0.9,
     });
   }
 
@@ -26,10 +26,10 @@ export const fetchDirectoryItemsApi = async (
 ): Promise<DirectoryElement[]> => {
   return new Promise<DirectoryElement[]>((resolve, reject) => {
     setTimeout(() => {
-      if (randomIntFromInterval(0, 3) === 2) {
+      if (randomIntFromInterval(0, 10) === 2) {
         reject('error');
       }
       resolve(generateItems(parentId));
-    }, 1000);
+    }, 500);
   });
 };

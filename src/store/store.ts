@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { fetchDirectoryItemsApi } from '../api/directory';
 import toast from 'react-hot-toast';
+import { ZoneIdentity } from '../types.ts';
 
 export interface DirectoryElement {
   id: string;
@@ -27,7 +28,12 @@ export interface DirectoryStore {
   setDirectoryOpen: (itemId: string, open: boolean) => void;
   setDirectoryItemIsLoading: (itemId: string | undefined, isLoading: boolean) => void;
   fetchDirectoryItems: (directoryId?: string) => void;
-  moveDirectoryItem: (activeItemId: string, overItemId: string) => void;
+  moveDirectoryItem: (
+    activeItemId: string,
+    overItemId: string,
+    zoneId: ZoneIdentity,
+    yDelta: number,
+  ) => void;
 }
 
 export const useDirectoryStore = create<DirectoryStore>()(
@@ -57,15 +63,21 @@ export const useDirectoryStore = create<DirectoryStore>()(
         }
       });
     },
-    moveDirectoryItem: (activeItemId: string, overItemId: string) => {
+    moveDirectoryItem: (
+      activeItemId: string,
+      overItemId: string,
+      zoneId: ZoneIdentity,
+      yDelta: number,
+    ) => {
       set((state) => {
         const rootIds = get().directory.rootIds;
-        const itemsMap = state.directory.itemsMap;
+        const itemsMap = get().directory.itemsMap;
         const activeItemParentId = itemsMap[activeItemId].parentId;
         const overParentItemId = itemsMap[overItemId].parentId;
+
         // Убираем из childrenIds activeItemId в родителе activeItem
         if (activeItemParentId) {
-          const nextActiveParentChildrenIds = state.directory.itemsMap[
+          const nextActiveParentChildrenIds = get().directory.itemsMap[
             activeItemParentId
           ].childrenIds?.filter((itemId) => itemId !== activeItemId);
 
@@ -73,16 +85,25 @@ export const useDirectoryStore = create<DirectoryStore>()(
             nextActiveParentChildrenIds;
           state.directory.itemsMap[activeItemParentId].hasChildren =
             !!nextActiveParentChildrenIds?.length;
-        } else {
-          // Нет у activeItem поля parentId, удаляем из rootIds
-          state.directory.rootIds = rootIds.filter((item) => item !== activeItemId);
         }
+
+        const deltaStartPosition = getOverPositionDelta(
+          yDelta,
+          zoneId,
+          activeItemParentId === overParentItemId,
+        );
+
+        console.log(deltaStartPosition);
 
         if (overParentItemId) {
           // Добавялем в childrenIds activeItemId в родителе overItem
-          // TODO: Почему get().directory.itemsMap[overParentItemId].childrenIds и state.directory.itemsMap[overParentItemId].childrenIds отличаются тут?
           const overParentChildrenIds =
             get().directory.itemsMap[overParentItemId].childrenIds;
+
+          // Нет у activeItem поля parentId, вытаскиваем из rootIds (перенос из rootIds по дереву)
+          if (!activeItemParentId) {
+            state.directory.rootIds = rootIds.filter((item) => item !== activeItemId);
+          }
 
           if (!overParentChildrenIds?.length) {
             state.directory.itemsMap[overParentItemId].childrenIds = [activeItemId];
@@ -92,9 +113,10 @@ export const useDirectoryStore = create<DirectoryStore>()(
           }
 
           const overItemPositionIndex = overParentChildrenIds.indexOf(overItemId);
+          console.log(overItemPositionIndex);
 
           state.directory.itemsMap[overParentItemId].childrenIds?.splice(
-            overItemPositionIndex,
+            overItemPositionIndex + deltaStartPosition,
             0,
             activeItemId,
           );
@@ -108,7 +130,13 @@ export const useDirectoryStore = create<DirectoryStore>()(
             state.directory.rootIds.splice(activeItemIndex, 1);
           }
 
-          state.directory.rootIds.splice(overRootIdsIndex, 0, activeItemId);
+          console.log(overRootIdsIndex);
+
+          state.directory.rootIds.splice(
+            overRootIdsIndex + deltaStartPosition,
+            0,
+            activeItemId,
+          );
           state.directory.itemsMap[activeItemId].parentId = undefined;
         }
       });
@@ -150,3 +178,27 @@ export const useDirectoryStore = create<DirectoryStore>()(
     },
   })),
 );
+
+function getOverPositionDelta(
+  yDelta: number,
+  zoneId: ZoneIdentity,
+  isSameLevel: boolean,
+) {
+  const isMoveTop = yDelta < 0;
+
+  if (zoneId === ZoneIdentity.Bottom) {
+    if (isMoveTop) {
+      return 1;
+    }
+    return isSameLevel ? 0 : 1;
+  }
+
+  if (zoneId === ZoneIdentity.Top) {
+    if (isMoveTop) {
+      return 0;
+    }
+    return isSameLevel ? -1 : 0;
+  }
+
+  return 0;
+}

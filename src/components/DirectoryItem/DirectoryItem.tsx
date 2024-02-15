@@ -4,8 +4,10 @@ import { clsx } from 'clsx';
 import styles from './DirectoyItem.module.scss';
 import { useShallow } from 'zustand/react/shallow';
 import { CSSProperties } from 'react';
-import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { useDraggable } from '@dnd-kit/core';
+import { DroppableZone } from '../DroppableZone';
+import { ZoneIdentity } from '../../types.ts';
 
 interface AdditionalData {
   level: number;
@@ -21,16 +23,16 @@ export const DirectoryItem = (props: {
   const directory = data[index];
   const { open: isOpen, isLoading } = directory;
 
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
+  const { setNodeRef, listeners, transform, attributes } = useDraggable({
     id: directory.id,
     data: {
       parentId: directory.parentId,
     },
   });
+
   const style: CSSProperties = {
     ...virtualizationStyles,
     transform: CSS.Translate.toString(transform),
-    transition,
   };
 
   const [fetchDirectoryItems, setDirectoryOpen] = useDirectoryStore(
@@ -72,25 +74,32 @@ export const DirectoryItem = (props: {
   };
 
   return (
-    <div ref={setNodeRef} className={styles.directoryItem} style={style}>
+    <div {...attributes} ref={setNodeRef} className={styles.directoryItem} style={style}>
       {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events,jsx-a11y/no-noninteractive-element-interactions,jsx-a11y/no-static-element-interactions */}
       <div
         style={{
           minHeight: '50px',
-          lineHeight: '50px',
           paddingLeft: `${directory.level * 20}px`,
         }}
         onClick={(e) => toggleOpen(e)}
+        className={styles.container}
       >
-        {directory.hasChildren ? (
-          renderArrow()
-        ) : (
-          <span style={{ marginRight: '3px' }}>----</span>
-        )}
-        <span {...attributes} {...listeners}>
-          {directory.title}
-        </span>
-        {isLoading && <span>&nbsp;Loading...</span>}
+        <div className={styles.handle}>
+          {directory.hasChildren ? (
+            renderArrow()
+          ) : (
+            <span style={{ marginRight: '3px' }}>----</span>
+          )}
+        </div>
+        <div {...listeners} className={styles.dropzones}>
+          <DroppableZone id={`${ZoneIdentity.Top}:${directory.id}`} height={25} />
+          <DroppableZone id={`${ZoneIdentity.Center}:${directory.id}`} height={50}>
+            <span>
+              {directory.title} {isLoading && ' Loading...'}
+            </span>
+          </DroppableZone>
+          <DroppableZone id={`${ZoneIdentity.Bottom}:${directory.id}`} height={25} />
+        </div>
       </div>
     </div>
   );

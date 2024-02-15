@@ -1,0 +1,14 @@
+.Droppable {
+  position: relative;
+  text-align: left;
+  display: flex;
+  flex-grow: 1;
+  width: 100%;
+  box-sizing: border-box;
+  background-color: #fff;
+
+
+  &.over {
+    box-shadow: inset #1eb99d 0 0 0 3px, rgba(201, 211, 219, 0.5) 20px 14px 24px;
+  }
+}

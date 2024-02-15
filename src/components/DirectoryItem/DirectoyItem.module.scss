@@ -10,5 +10,17 @@
   flex-direction: column;
   box-sizing: border-box;
 
-  border: 1px solid #ccc;
+  .container {
+    display: flex;
+
+    .handle {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .dropzones {
+      flex-grow: 1;
+    }
+  }
 }

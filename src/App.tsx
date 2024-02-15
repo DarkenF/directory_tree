@@ -12,6 +12,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { Toaster } from 'react-hot-toast';
 import { closestCenter, DndContext, DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { ZoneIdentity } from './types.ts';
 
 interface ChildItems extends DirectoryElement {
   level: number;
@@ -67,6 +68,20 @@ const isOverItemIsChildren = (
   return isOverItemIsChildren(itemsMap, activeItemId, overItemParent.parentId);
 };
 
+const getOverItemIdInfo = (
+  id: string,
+): {
+  itemId: string;
+  zoneId: ZoneIdentity;
+} => {
+  const [zoneId, itemId] = id.split(':') as [ZoneIdentity, string];
+
+  return {
+    itemId,
+    zoneId,
+  };
+};
+
 function App() {
   const [rootIds, itemsMap, fetchDirectoryItems, moveDirectoryItem] = useDirectoryStore(
     useShallow(
@@ -93,20 +108,28 @@ function App() {
   const itemDataIds = useMemo(() => itemData.map(({ id }) => id), [itemData]);
 
   const onDragEnd = (e: DragEndEvent) => {
-    const overItemId = e.over?.id as string | undefined;
+    if (!e.over) {
+      return;
+    }
+    const overId = e.over.id as string;
+
+    const { itemId, zoneId } = getOverItemIdInfo(overId);
+
     const activeItemId = e.active.id as string;
 
     if (
-      !overItemId ||
+      !itemId ||
       isOverItemIsChildren(itemsMap, activeItemId, e.over?.data.current?.parentId)
     ) {
       return;
     }
 
-    moveDirectoryItem(activeItemId, overItemId);
+    moveDirectoryItem(activeItemId, itemId, zoneId, e.delta.y);
   };
   const onDragOver = (e: DragEndEvent) => {
-    console.log('over', e);
+    if (!e.over) {
+      return;
+    }
   };
   const onDragMove = (e: DragEndEvent) => {
     console.log('move', e);
