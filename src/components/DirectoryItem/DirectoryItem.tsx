@@ -23,7 +23,7 @@ export const DirectoryItem = (props: {
   const directory = data[index];
   const { open: isOpen, isLoading } = directory;
 
-  const { setNodeRef, listeners, transform, attributes } = useDraggable({
+  const { setNodeRef, listeners, transform, attributes, isDragging } = useDraggable({
     id: directory.id,
     data: {
       parentId: directory.parentId,
@@ -74,7 +74,7 @@ export const DirectoryItem = (props: {
   };
 
   return (
-    <div {...attributes} ref={setNodeRef} className={styles.directoryItem} style={style}>
+    <div {...attributes} ref={setNodeRef} className={clsx(styles.directoryItem, isDragging && styles.dragging)} style={style}>
       {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events,jsx-a11y/no-noninteractive-element-interactions,jsx-a11y/no-static-element-interactions */}
       <div
         style={{
