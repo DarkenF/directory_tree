@@ -75,6 +75,10 @@ export const useDirectoryStore = create<DirectoryStore>()(
         const activeItemParentId = itemsMap[activeItemId].parentId;
         const overParentItemId = itemsMap[overItemId].parentId;
 
+        if (activeItemId === overItemId) {
+          return;
+        }
+
         // Убираем из childrenIds activeItemId в родителе activeItem
         if (activeItemParentId) {
           const nextActiveParentChildrenIds = get().directory.itemsMap[
@@ -93,7 +97,23 @@ export const useDirectoryStore = create<DirectoryStore>()(
           activeItemParentId === overParentItemId,
         );
 
-        console.log(deltaStartPosition);
+        if (zoneId === ZoneIdentity.Center) {
+          // Добавялем в childrenIds activeItemId в overItem
+          const overItemChildrenIds =
+            get().directory.itemsMap[overItemId].childrenIds || [];
+
+          state.directory.itemsMap[overItemId].childrenIds = [
+            ...overItemChildrenIds,
+            activeItemId,
+          ];
+          state.directory.itemsMap[overItemId].hasChildren = true;
+
+          if (!activeItemParentId) {
+            state.directory.rootIds = rootIds.filter((item) => item !== activeItemId);
+          }
+
+          return;
+        }
 
         if (overParentItemId) {
           // Добавялем в childrenIds activeItemId в родителе overItem
@@ -113,7 +133,6 @@ export const useDirectoryStore = create<DirectoryStore>()(
           }
 
           const overItemPositionIndex = overParentChildrenIds.indexOf(overItemId);
-          console.log(overItemPositionIndex);
 
           state.directory.itemsMap[overParentItemId].childrenIds?.splice(
             overItemPositionIndex + deltaStartPosition,
@@ -129,8 +148,6 @@ export const useDirectoryStore = create<DirectoryStore>()(
           if (activeItemIndex !== -1) {
             state.directory.rootIds.splice(activeItemIndex, 1);
           }
-
-          console.log(overRootIdsIndex);
 
           state.directory.rootIds.splice(
             overRootIdsIndex + deltaStartPosition,

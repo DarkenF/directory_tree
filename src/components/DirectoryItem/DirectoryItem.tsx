@@ -25,9 +25,6 @@ export const DirectoryItem = (props: {
 
   const { setNodeRef, listeners, transform, attributes, isDragging } = useDraggable({
     id: directory.id,
-    data: {
-      parentId: directory.parentId,
-    },
   });
 
   const style: CSSProperties = {
@@ -39,8 +36,8 @@ export const DirectoryItem = (props: {
     useShallow((state) => [state.fetchDirectoryItems, state.setDirectoryOpen] as const),
   );
 
-  const toggleOpen = async (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const toggleOpen = async (e?: React.MouseEvent) => {
+    e?.stopPropagation();
     if (isOpen) {
       setDirectoryOpen(directory.id, false);
 
@@ -74,7 +71,12 @@ export const DirectoryItem = (props: {
   };
 
   return (
-    <div {...attributes} ref={setNodeRef} className={clsx(styles.directoryItem, isDragging && styles.dragging)} style={style}>
+    <div
+      {...attributes}
+      ref={setNodeRef}
+      className={clsx(styles.directoryItem, isDragging && styles.dragging)}
+      style={style}
+    >
       {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events,jsx-a11y/no-noninteractive-element-interactions,jsx-a11y/no-static-element-interactions */}
       <div
         style={{
@@ -92,13 +94,25 @@ export const DirectoryItem = (props: {
           )}
         </div>
         <div {...listeners} className={styles.dropzones}>
-          <DroppableZone id={`${ZoneIdentity.Top}:${directory.id}`} height={25} />
-          <DroppableZone id={`${ZoneIdentity.Center}:${directory.id}`} height={50}>
+          <DroppableZone
+            setOpen={toggleOpen}
+            id={`${ZoneIdentity.Top}:${directory.id}`}
+            height={25}
+          />
+          <DroppableZone
+            setOpen={toggleOpen}
+            id={`${ZoneIdentity.Center}:${directory.id}`}
+            height={50}
+          >
             <span>
               {directory.title} {isLoading && ' Loading...'}
             </span>
           </DroppableZone>
-          <DroppableZone id={`${ZoneIdentity.Bottom}:${directory.id}`} height={25} />
+          <DroppableZone
+            setOpen={toggleOpen}
+            id={`${ZoneIdentity.Bottom}:${directory.id}`}
+            height={25}
+          />
         </div>
       </div>
     </div>

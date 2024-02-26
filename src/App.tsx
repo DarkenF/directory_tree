@@ -11,7 +11,6 @@ import { useEffect, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { Toaster } from 'react-hot-toast';
 import { closestCenter, DndContext, DragEndEvent } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { ZoneIdentity } from './types.ts';
 
 interface ChildItems extends DirectoryElement {
@@ -68,7 +67,7 @@ const isOverItemIsChildren = (
   return isOverItemIsChildren(itemsMap, activeItemId, overItemParent.parentId);
 };
 
-const getOverItemIdInfo = (
+export const getOverItemIdInfo = (
   id: string,
 ): {
   itemId: string;
@@ -105,8 +104,6 @@ function App() {
     return getChildItems(itemsMap, rootIds);
   }, [itemsMap, rootIds]);
 
-  const itemDataIds = useMemo(() => itemData.map(({ id }) => id), [itemData]);
-
   const onDragEnd = (e: DragEndEvent) => {
     if (!e.over) {
       return;
@@ -119,43 +116,28 @@ function App() {
 
     if (
       !itemId ||
-      isOverItemIsChildren(itemsMap, activeItemId, e.over?.data.current?.parentId)
+      isOverItemIsChildren(itemsMap, activeItemId, itemsMap[itemId].parentId)
     ) {
       return;
     }
 
     moveDirectoryItem(activeItemId, itemId, zoneId, e.delta.y);
   };
-  const onDragOver = (e: DragEndEvent) => {
-    if (!e.over) {
-      return;
-    }
-  };
-  const onDragMove = (e: DragEndEvent) => {
-    console.log('move', e);
-  };
 
   return (
     <div>
       <Toaster />
-      <DndContext
-        collisionDetection={closestCenter}
-        onDragEnd={onDragEnd}
-        onDragMove={onDragMove}
-        onDragOver={onDragOver}
-      >
-        <SortableContext items={itemDataIds} strategy={verticalListSortingStrategy}>
-          <FixedSizeList
-            itemData={itemData}
-            itemKey={itemKey}
-            height={500}
-            itemCount={itemData.length}
-            itemSize={50}
-            width="100%"
-          >
-            {DirectoryItem}
-          </FixedSizeList>
-        </SortableContext>
+      <DndContext collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+        <FixedSizeList
+          itemData={itemData}
+          itemKey={itemKey}
+          height={500}
+          itemCount={itemData.length}
+          itemSize={50}
+          width="100%"
+        >
+          {DirectoryItem}
+        </FixedSizeList>
       </DndContext>
     </div>
   );
